@@ -1,0 +1,114 @@
+// --- CONFIGURAÇÕES DA EVOLUTION API --- O codigo so funciona usando EVOLUTION
+const EVO_URL_REL = "(URL EVOLUTION)"; 
+const API_KEY_REL = "(API)"; 
+const INSTANCIA_REL = "(Nome da Instancia)";
+const GRUPO_JID_REL = "(id do grupo whatsapp)"; //Caso for usar alerta em grupo
+
+function gerarRelatorioDinamico() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("Nome da pasta"); // Coloque o nome da pasta onde esta os dados aqui
+  
+  if (!sheet) {
+    SpreadsheetApp.getUi().alert("Erro: Aba '(Nome da Pasta)' não encontrada!");// Coloque o nome da pasta onde esta os dados aqui
+    return;
+  }
+
+  var dataRelatorio = sheet.getRange("A2").getDisplayValue(); //Aqui tem que ser a cedula onde esta a condicional de data 
+  var relatorioFinal = "📊 *RELATÓRIO DIÁRIO - " + dataRelatorio + "*\n\n";
+
+  // --- GOOGLE ADS ---
+  var dadosGoogle = sheet.getRange("B2:B15").getValues(); 
+  for (var i = 0; i < dadosGoogle.length; i++) {
+    var nome = dadosGoogle[i][0];
+    if (nome && nome !== "") {
+      relatorioFinal += "🔹 *Google: " + nome + "*\n";
+      relatorioFinal += "Impressões: " + sheet.getRange(i + 2, 3).getDisplayValue() + "\n";
+      relatorioFinal += "Taxa de Conv.: " + sheet.getRange(i + 2, 4).getDisplayValue() + "\n";
+      relatorioFinal += "Cliques: " + sheet.getRange(i + 2, 5).getDisplayValue() + "\n";
+      relatorioFinal += "Conversões: " + sheet.getRange(i + 2, 6).getDisplayValue() + "\n";
+      relatorioFinal += "CPC Médio: " + sheet.getRange(i + 2, 7).getDisplayValue() + "\n";
+      relatorioFinal += "Custo/Conv: " + sheet.getRange(i + 2, 8).getDisplayValue() + "\n";
+      relatorioFinal += "Investido: " + sheet.getRange(i + 2, 9).getDisplayValue() + "\n\n";
+    }
+  }
+
+  relatorioFinal += "----------------------------------\n\n";
+
+  // --- META ADS ---
+  var dadosMeta = sheet.getRange("B18:B30").getValues(); 
+  for (var j = 0; j < dadosMeta.length; j++) {
+    var nomeM = dadosMeta[j][0];
+    if (nomeM && nomeM !== "" && nomeM !== "Cliente") {
+      relatorioFinal += "🔸 *Meta: " + nomeM + "*\n";
+      relatorioFinal += "Impressões: " + sheet.getRange(j + 18, 3).getDisplayValue() + "\n";
+      relatorioFinal += "Alcance: " + sheet.getRange(j + 18, 4).getDisplayValue() + "\n";
+      relatorioFinal += "Taxa de Interação: " + sheet.getRange(j + 18, 5).getDisplayValue() + "\n";
+      relatorioFinal += "Cliques: " + sheet.getRange(j + 18, 6).getDisplayValue() + "\n";
+      relatorioFinal += "Leads: " + sheet.getRange(j + 18, 7).getDisplayValue() + "\n";
+      relatorioFinal += "CPL: " + sheet.getRange(j + 18, 8).getDisplayValue() + "\n";
+      relatorioFinal += "Investido: " + sheet.getRange(j + 18, 9).getDisplayValue() + "\n";
+      
+      // Adicionando Saldo e Valor Usado (Assumindo colunas J e K)
+      var saldo = sheet.getRange(j + 18, 10).getDisplayValue();
+      var usado = sheet.getRange(j + 18, 11).getDisplayValue();
+      if (saldo) relatorioFinal += "Saldo: " + saldo + "\n";
+      if (usado) relatorioFinal += "Valor usado: " + usado + "\n";
+      
+      relatorioFinal += "\n";
+    }
+  }
+
+
+  var html = HtmlService.createHtmlOutput(
+    '<div style="font-family: sans-serif; padding: 15px; background-color: #f8f9fa;">' +
+    '<p style="color: #444; font-weight: bold; margin-bottom: 10px;">🚀 Relatório Pronto para o Grupo</p>' +
+    '<textarea id="text" readonly style="width:100%; height:280px; border: 1px solid #ddd; padding: 10px; border-radius: 8px; font-size: 11px; background: #fff;">' + relatorioFinal + '</textarea>' +
+    '<br><br>' +
+    '<div style="display: flex; flex-direction: column; gap: 10px;">' +
+      '<button id="btnSend" onclick="enviarRelatorio()" ' +
+      'style="background: #25D366; color: white; border: none; padding: 14px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 14px;">📤 ENVIAR E FECHAR</button>' +
+      '<button onclick="copy()" style="background: #e9ecef; color: #495057; border: none; padding: 10px; border-radius: 10px; cursor: pointer; font-size: 12px;">📋 Apenas Copiar</button>' +
+    '</div>' +
+    '<script>' +
+      'function enviarRelatorio(){' +
+        'var btn = document.getElementById("btnSend");' +
+        'btn.innerText = "⏳ ENVIANDO...";' +
+        'btn.disabled = true;' +
+        'btn.style.background = "#94e7b3";' +
+        // O withSuccessHandler garante que o pop-up só fecha se der certo
+        'google.script.run.withSuccessHandler(fecharJanela).dispararRelatorioEvo(document.getElementById("text").value);' +
+      '}' +
+      'function fecharJanela(){ google.script.host.close(); }' + // Função que fecha o pop-up
+      'function copy(){ var t = document.getElementById("text"); t.select(); document.execCommand("copy"); alert("Copiado com sucesso!"); }' +
+    '</script>' +
+    '</div>'
+  ).setWidth(400).setHeight(520);
+  
+  SpreadsheetApp.getUi().showModalDialog(html, "📊 Dashboard Diário");
+}
+
+function dispararRelatorioEvo(conteudo) {
+  const url = `${EVO_URL_REL}/message/sendText/${INSTANCIA_REL}`;
+  const options = {
+    "method": "post",
+    "contentType": "application/json",
+    "headers": { "apikey": API_KEY_REL },
+    "payload": JSON.stringify({
+      "number": GRUPO_JID_REL,
+      "text": conteudo,
+      "options": { "delay": 1000, "presence": "composing" }
+    }),
+    "muteHttpExceptions": true
+  };
+  
+  try {
+    const response = UrlFetchApp.fetch(url, options);
+    if (response.getResponseCode() == 201) {
+      SpreadsheetApp.getActiveSpreadsheet().toast("✅ Relatório enviado com sucesso!", "WhatsApp");
+    }
+  } catch (e) {
+    Logger.log("Erro no envio: " + e.message);
+  }
+}
+
+//Sempre verificar as colunas na sua planilha pra estarem de acordo com o codigo

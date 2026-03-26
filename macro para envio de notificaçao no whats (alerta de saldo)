@@ -1,0 +1,59 @@
+// --- CONFIGURAÇÕES TÉCNICAS --- O codigo so funciona usando EVOLUTION
+const EVO_URL = "URL EVOLUTION"; 
+const API_KEY = "API EVOLUTION"; 
+const INSTANCIA = "NOME DA INSTANCIA EVOLUTION";
+const MEU_NUMERO = "SEU NUMERO";
+const GRUPO_JID = "ID DO GRUPO"; //Caso for usar alerta em grupo
+
+function verificarSaldosEAlertarEvo() {
+  const planilha = SpreadsheetApp.getActiveSpreadsheet();
+  const aba = planilha.getSheets().find(s => s.getName().trim() === "(NOME DA PASTA)");// Coloque o nome da pasta onde esta os dados aqui
+  
+  if (!aba) return;
+
+  const dados = aba.getRange("B7:G26").getValues(); // Ajuste o intervalo dos dados
+  let alertas = [];
+
+  dados.forEach((linha) => {
+    let conta = linha[0];      // Coluna B: Nome da Conta
+    let plataforma = linha[1]; // Coluna C: Canal (Meta ou Google)
+    let saldoAtual = linha[5]; // Coluna G: Orçamento Restante
+    
+    if (!conta || saldoAtual === "") return;
+
+    // Ajuste o seu limete de saldo 
+    if (saldoAtual < 450) {
+      let iconPlat = plataforma.toLowerCase().includes("google") ? "🟧 Google" : "🟦 Meta";
+      let statusTxt = saldoAtual < 0 ? "🚨 SALDO ESTOURADO" : "⚠️ SALDO CRÍTICO";
+
+      let blocoAlerta = `${statusTxt}\n🏢 *Conta:* ${conta}\n🌐 *Plataforma:* ${iconPlat}\n💰 *Saldo Restante:* R$ ${saldoAtual.toFixed(2).replace('.', ',')}`;
+      
+      alertas.push(blocoAlerta);
+    }
+  });
+
+  if (alertas.length > 0) {
+    let mensagemFinal = "📢 *ALERTA DE BUDGET - GESTÃO*\n\n" + alertas.join("\n\n---\n\n");
+    
+    enviarMensagemEvo(MEU_NUMERO, mensagemFinal);
+    enviarMensagemEvo(GRUPO_JID, mensagemFinal);
+  }
+}
+
+function enviarMensagemEvo(target, texto) {
+  const url = `${EVO_URL}/message/sendText/${INSTANCIA}`;
+  const options = {
+    "method": "post",
+    "contentType": "application/json",
+    "headers": { "apikey": API_KEY },
+    "payload": JSON.stringify({
+      "number": target,
+      "text": texto,
+      "options": { "delay": 1200, "presence": "composing" }
+    }),
+    "muteHttpExceptions": true
+  };
+  UrlFetchApp.fetch(url, options);
+}
+
+//Sempre verificar as colunas na sua planilha pra estarem de acordo com o codigo

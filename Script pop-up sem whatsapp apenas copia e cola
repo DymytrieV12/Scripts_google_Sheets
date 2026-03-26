@@ -1,0 +1,68 @@
+function gerarRelatorioDinamico() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("(nome da pasta)"); 
+  
+  if (!sheet) {
+    SpreadsheetApp.getUi().alert("Erro: Aba '(Nome da Pasta)' não encontrada!");
+    return;
+  }
+
+  var dataRelatorio = sheet.getRange("A2").getDisplayValue();
+  var relatorioFinal = "📊 *RELATÓRIO DIÁRIO - " + dataRelatorio + "*\n\n";
+
+  // --- GOOGLE ADS ---
+  var dadosGoogle = sheet.getRange("B2:B15").getValues(); 
+  for (var i = 0; i < dadosGoogle.length; i++) {
+    var nome = dadosGoogle[i][0];
+    if (nome && nome !== "") {
+      relatorioFinal += "🔹 *Google: " + nome + "*\n";
+      relatorioFinal += "Impressões: " + sheet.getRange(i + 2, 3).getDisplayValue() + "\n";
+      relatorioFinal += "Taxa de Conv.: " + sheet.getRange(i + 2, 4).getDisplayValue() + "\n";
+      relatorioFinal += "Cliques: " + sheet.getRange(i + 2, 5).getDisplayValue() + "\n";
+      relatorioFinal += "Conversões: " + sheet.getRange(i + 2, 6).getDisplayValue() + "\n";
+      relatorioFinal += "CPC Médio: " + sheet.getRange(i + 2, 7).getDisplayValue() + "\n";
+      relatorioFinal += "Custo/Conv: " + sheet.getRange(i + 2, 8).getDisplayValue() + "\n";
+      relatorioFinal += "Investido: " + sheet.getRange(i + 2, 9).getDisplayValue() + "\n\n";
+    }
+  }
+
+  relatorioFinal += "----------------------------------\n\n";
+
+  // --- META ADS ---
+  var dadosMeta = sheet.getRange("B18:B30").getValues(); 
+  for (var j = 0; j < dadosMeta.length; j++) {
+    var nomeM = dadosMeta[j][0];
+    if (nomeM && nomeM !== "" && nomeM !== "Cliente") {
+      relatorioFinal += "🔸 *Meta: " + nomeM + "*\n";
+      relatorioFinal += "Impressões: " + sheet.getRange(j + 18, 3).getDisplayValue() + "\n";
+      relatorioFinal += "Alcance: " + sheet.getRange(j + 18, 4).getDisplayValue() + "\n";
+      relatorioFinal += "Taxa de Interação: " + sheet.getRange(j + 18, 5).getDisplayValue() + "\n";
+      relatorioFinal += "Cliques: " + sheet.getRange(j + 18, 6).getDisplayValue() + "\n";
+      relatorioFinal += "Leads: " + sheet.getRange(j + 18, 7).getDisplayValue() + "\n";
+      relatorioFinal += "CPL: " + sheet.getRange(j + 18, 8).getDisplayValue() + "\n";
+      relatorioFinal += "Investido: " + sheet.getRange(j + 18, 9).getDisplayValue() + "\n";
+      
+      // Adicionando Saldo e Valor Usado (Assumindo colunas J e K)
+      var saldo = sheet.getRange(j + 18, 10).getDisplayValue();
+      var usado = sheet.getRange(j + 18, 11).getDisplayValue();
+      if (saldo) relatorioFinal += "Saldo: " + saldo + "\n";
+      if (usado) relatorioFinal += "Valor usado: " + usado + "\n";
+      
+      relatorioFinal += "\n";
+    }
+  }
+
+  // Janela de Saída Estilizada
+  var html = HtmlService.createHtmlOutput(
+    '<div style="font-family: sans-serif; padding: 10px;">' +
+    '<p style="color: #666;">Tudo pronto! Selecione o texto abaixo e copie:</p>' +
+    '<textarea id="text" style="width:100%; height:350px; border: 1px solid #ccc; padding: 5px; border-radius: 4px;">' + relatorioFinal + '</textarea>' +
+    '<br><br><button onclick="copy()" style="background: #0b57d0; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer;">Copiar Texto</button>' +
+    '<script>function copy(){ var t = document.getElementById("text"); t.select(); document.execCommand("copy"); alert("Copiado!"); }</script>' +
+    '</div>'
+  ).setWidth(450).setHeight(500);
+  
+  SpreadsheetApp.getUi().showModalDialog(html, "🚀 Relatório Gerado");
+}
+
+//Sempre verificar as colunas na sua planilha pra estarem de acordo com o codigo
